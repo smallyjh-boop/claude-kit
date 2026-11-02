@@ -213,6 +213,11 @@ CCKIT_EOF
 - 只读完成任务所需的文件；不读 node_modules、dist、日志、大 JSON
 - 回复简洁：说改了什么、为什么，不要复述整段代码
 - 任务做完后更新 `docs/HANDOVER.md`
+
+## Compact instructions（自动压缩上下文时保留什么）
+- 保留：当前任务和进度、改过的文件路径、未解决的报错、已做的决定和原因、下一步
+- 丢弃：已读文件的全文、命令完整日志、已解决问题的排查过程
+- 压缩前如有重要进展，先更新 `docs/HANDOVER.md`
 CCKIT_EOF
 [ -f docs/PLAN.md ] || cat > docs/PLAN.md <<'CCKIT_EOF'
 # 开发计划（由 /plan 生成，/go 逐条执行）
@@ -252,4 +257,25 @@ CCKIT_EOF
 ## 本次改动的文件
 - <路径>：<改了什么>
 CCKIT_EOF
-echo "✅ 安装完成：命令和子代理已装到 ~/.claude，本项目已有的 CLAUDE.md / docs 不会被覆盖。现在运行 claude，然后输入 /init-project"
+# --- 自动压缩上下文：用到 70% 就自动压缩（默认快满才压缩），保持自动压缩开启 ---
+if [ ! -f ~/.claude/settings.json ]; then
+  echo '{ "env": { "CLAUDE_AUTOCOMPACT_PCT_OVERRIDE": "70" } }' > ~/.claude/settings.json
+elif command -v node >/dev/null 2>&1; then
+  node -e 'const f=process.argv[1],fs=require("fs");const j=JSON.parse(fs.readFileSync(f,"utf8"));j.env=Object.assign({},j.env);if(!j.env.CLAUDE_AUTOCOMPACT_PCT_OVERRIDE)j.env.CLAUDE_AUTOCOMPACT_PCT_OVERRIDE="70";fs.writeFileSync(f,JSON.stringify(j,null,2)+"\n")' ~/.claude/settings.json
+elif command -v python3 >/dev/null 2>&1; then
+  python3 -c 'import json,sys;f=sys.argv[1];j=json.load(open(f));j.setdefault("env",{}).setdefault("CLAUDE_AUTOCOMPACT_PCT_OVERRIDE","70");json.dump(j,open(f,"w"),indent=2,ensure_ascii=False)' ~/.claude/settings.json
+else
+  echo "⚠️ 没有 node / python3，请手动在 ~/.claude/settings.json 的 env 里加 CLAUDE_AUTOCOMPACT_PCT_OVERRIDE=70"
+fi
+command -v claude >/dev/null 2>&1 && claude config set -g autoCompactEnabled true >/dev/null 2>&1 || true
+# 已有的 CLAUDE.md 不覆盖，只在缺少时追加压缩说明
+if [ -f CLAUDE.md ] && ! grep -q "Compact instructions" CLAUDE.md; then
+  cat >> CLAUDE.md <<'CCKIT_EOF'
+
+## Compact instructions（自动压缩上下文时保留什么）
+- 保留：当前任务和进度、改过的文件路径、未解决的报错、已做的决定和原因、下一步
+- 丢弃：已读文件的全文、命令完整日志、已解决问题的排查过程
+- 压缩前如有重要进展，先更新 `docs/HANDOVER.md`
+CCKIT_EOF
+fi
+echo "✅ 安装完成：命令和子代理已装到 ~/.claude，本项目已有的 CLAUDE.md / docs 不会被覆盖（缺压缩说明时只追加一段）；已开启自动压缩（70%）。现在运行 claude，然后输入 /init-project"

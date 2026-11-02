@@ -14,6 +14,7 @@ curl -fsSL https://raw.githubusercontent.com/smallyjh-boop/claude-kit/main/insta
 - 命令和子代理装到 `~/.claude/`，所有项目通用。
 - 当前项目里生成 `CLAUDE.md`、`docs/PLAN.md`、`docs/HANDOVER.md`；已存在的不会覆盖。
 - 再次运行即可更新命令和子代理。
+- 自动压缩上下文：在 `~/.claude/settings.json` 设置 `CLAUDE_AUTOCOMPACT_PCT_OVERRIDE=70`（上下文用到 70% 自动压缩），并在 CLAUDE.md 加入 `Compact instructions` 说明压缩时保留什么；已有的 CLAUDE.md 只追加这一段。
 
 装好后运行 `claude`，先输入 `/init-project` 自动填写 CLAUDE.md。
 
